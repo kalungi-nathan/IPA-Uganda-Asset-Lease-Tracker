@@ -25,9 +25,13 @@ Deploy to GitHub Pages — the `index.html` file is fully self-contained.
 |----------|-------------|---------------------|
 | admin    | admin123    | System Admin        |
 | finance  | finance123  | Finance Officer     |
-| pm1      | pm123       | Project Manager     |
-| fm1      | fm123       | Field Manager       |
-| ra1      | ra123       | Research Associate  |
+| Obed     | O123       | Project Manager     |
+| Gloria     | G123       | Project Manager       |
+| Anthony     | A123       | Project Manager  |
+| Emmanuel     | E123       | Field Manager     |
+| Charity     | C123       | Field Manager       |
+| Harod      | H123       | Field Manager  |
+| Hassan      | Y123       | Field Manager     |
 
 > **Change all passwords after first login via the Users page.**
 
