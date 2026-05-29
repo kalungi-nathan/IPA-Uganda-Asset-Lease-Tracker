@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPA Asset Lease Tracker</title>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+:root{--ipa-green:#49ac57;--dark-green:#155240;--light-blue:#84d0d4;--dark-blue:#2b4085;--red-orange:#f26529;--light-gray:#f1f2f2;--dark-gray:#c9c9c8;--charcoal:#414042;--white:#ffffff;--sidebar-w:240px;--danger:#e53935;--warning:#fb8c00;--success:#43a047}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;font-size:14px;color:var(--charcoal);background:var(--light-gray);min-height:100vh}
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,var(--dark-green) 0%,var(--dark-blue) 100%);position:fixed;inset:0;z-index:9999}
+.auth-card{background:#fff;border-radius:12px;padding:40px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.auth-logo{text-align:center;margin-bottom:28px}
+.logo-icon{width:56px;height:56px;background:var(--ipa-green);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.logo-icon .material-icons{color:white;font-size:32px}
+.logo-text{font-family:Georgia,serif;font-size:18px;color:var(--dark-green);font-weight:bold;display:block}
+.logo-sub{font-size:11px;color:var(--dark-gray);letter-spacing:1px;text-transform:uppercase;margin-top:3px;display:block}
+.auth-error{background:#ffebee;color:var(--danger);padding:10px 12px;border-radius:6px;font-size:13px;margin-bottom:14px;display:none;border-left:4px solid var(--danger)}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px;color:var(--charcoal);margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px 12px;border:1.5px solid var(--dark-gray);border-radius:6px;font-size:14px;color:var(--charcoal)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--ipa-green)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border:none;border-radius:6px;font-size:13px;font-weight:bold;cursor:pointer;transition:all .2s;text-decoration:none;white-space:nowrap}
+.btn-primary{background:var(--ipa-green);color:#fff}
+.btn-primary:hover{background:var(--dark-green)}
+.btn-secondary{background:var(--light-gray);color:var(--charcoal);border:1px solid var(--dark-gray)}
+.btn-secondary:hover{background:var(--dark-gray)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-warning{background:var(--warning);color:#fff}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-full{width:100%;justify-content:center}
+#app{display:none}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:var(--dark-green);color:#fff;display:flex;flex-direction:column;z-index:100;overflow-y:auto}
+.sb-header{padding:16px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-title{font-family:Georgia,serif;font-size:14px;font-weight:bold;color:#fff;line-height:1.3}
+.sb-sub{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.sb-user{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px}
+.u-avatar{width:32px;height:32px;background:var(--ipa-green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;flex-shrink:0}
+.u-name{font-size:13px;font-weight:bold;color:#fff}
+.u-role{font-size:11px;color:rgba(255,255,255,.55)}
+.nav-sec{padding:6px 0}
+.nav-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);padding:8px 16px 3px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 16px;cursor:pointer;color:rgba(255,255,255,.75);font-size:13px;border-left:3px solid transparent;transition:.15s}
+.nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-item.active{background:rgba(73,172,87,.2);color:#fff;border-left-color:var(--ipa-green)}
+.nav-item .material-icons{font-size:17px}
+.sb-footer{margin-top:auto;padding:12px 16px;border-top:1px solid rgba(255,255,255,.1)}
+.main{margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column}
+.topbar{height:58px;background:#fff;border-bottom:1px solid var(--dark-gray);display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:50}
+.topbar-title{font-family:Georgia,serif;font-size:17px;color:var(--dark-green);font-weight:bold}
+.topbar-acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.content{padding:22px;flex:1}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+.stat-card{background:#fff;border-radius:8px;padding:16px;border-left:4px solid var(--ipa-green);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.stat-card.bl{border-left-color:var(--dark-blue)}.stat-card.or{border-left-color:var(--red-orange)}.stat-card.tl{border-left-color:var(--light-blue)}.stat-card.wn{border-left-color:var(--warning)}
+.st-label{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--dark-gray);margin-bottom:5px}
+.st-val{font-size:26px;font-weight:bold;color:var(--charcoal);line-height:1}
+.st-sub{font-size:11px;color:var(--dark-gray);margin-top:3px}
+.card{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:18px}
+.card-hdr{padding:14px 18px;border-bottom:1px solid var(--light-gray);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.card-title{font-family:Georgia,serif;font-size:15px;color:var(--dark-green);font-weight:bold}
+.card-body{padding:18px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--light-gray);padding:9px 11px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--dark-gray)}
+tbody td{padding:9px 11px;border-bottom:1px solid var(--light-gray);vertical-align:middle}
+tbody tr:hover{background:#f9f9f9}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:bold;text-transform:uppercase}
+.bg-green{background:#e8f5e9;color:#2e7d32}.bg-orange{background:#fff3e0;color:#e65100}.bg-red{background:#ffebee;color:#c62828}.bg-blue{background:#e3f2fd;color:#1565c0}.bg-gray{background:var(--light-gray);color:var(--charcoal)}.bg-warn{background:#fff8e1;color:#f57f17}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-ov.active{display:flex}
+.modal{background:#fff;border-radius:10px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-hdr{padding:16px 18px;border-bottom:1px solid var(--light-gray);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:Georgia,serif;font-size:16px;color:var(--dark-green);font-weight:bold}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--dark-gray);line-height:1}
+.modal-body{padding:18px}
+.modal-ftr{padding:12px 18px;border-top:1px solid var(--light-gray);display:flex;justify-content:flex-end;gap:8px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.fr3{grid-template-columns:1fr 1fr 1fr}
+.fr1{grid-template-columns:1fr}
+.fg{margin-bottom:12px}
+.fg textarea{resize:vertical;min-height:65px}
+.fn{font-size:11px;color:var(--dark-gray);margin-top:2px}
+.cost-box{background:linear-gradient(135deg,var(--dark-green),var(--dark-blue));color:#fff;border-radius:8px;padding:14px;margin:14px 0;text-align:center}
+.cost-amt{font-size:26px;font-weight:bold}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.si{padding:7px 11px;border:1.5px solid var(--dark-gray);border-radius:6px;font-size:13px;width:210px}
+.si:focus{outline:none;border-color:var(--ipa-green)}
+.alert-box{padding:11px 14px;border-radius:6px;font-size:13px;margin-bottom:10px;display:flex;align-items:flex-start;gap:7px}
+.ab-warn{background:#fff8e1;border-left:4px solid var(--warning);color:#5d4037}
+.ab-err{background:#ffebee;border-left:4px solid var(--danger);color:#b71c1c}
+.ab-ok{background:#e8f5e9;border-left:4px solid var(--success);color:#1b5e20}
+.ab-info{background:#e3f2fd;border-left:4px solid var(--dark-blue);color:#0d47a1}
+.dep-bar-w{background:var(--light-gray);border-radius:4px;height:7px;overflow:hidden}
+.dep-bar{height:100%;border-radius:4px}
+#toast{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:7px}
+.t-item{background:var(--charcoal);color:#fff;padding:11px 16px;border-radius:8px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.25);animation:si .3s ease;max-width:300px;display:flex;align-items:center;gap:7px}
+.t-item.success{background:var(--success)}.t-item.error{background:var(--danger)}.t-item.warning{background:var(--warning)}
+@keyframes si{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@media print{.sidebar,.topbar,.topbar-acts,.btn,.toolbar,#toast,.modal-ov{display:none!important}.main{margin-left:0}.content{padding:0}.card{box-shadow:none;border:1px solid #ddd}body{background:#fff}}
+.page{display:none}.page.active{display:block}
+.tab-bar{display:flex;border-bottom:2px solid var(--light-gray);margin-bottom:18px;gap:2px}
+.tab{padding:9px 16px;cursor:pointer;font-size:13px;font-weight:bold;color:var(--dark-gray);border-bottom:3px solid transparent;margin-bottom:-2px;transition:.15s}
+.tab.active{color:var(--ipa-green);border-bottom-color:var(--ipa-green)}
+.es{text-align:center;padding:36px 18px;color:var(--dark-gray)}
+.es .material-icons{font-size:44px;opacity:.3;display:block;margin-bottom:10px}
+input[type=checkbox]{accent-color:var(--ipa-green);width:14px;height:14px}
+.chip{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:12px;font-size:11px;background:var(--light-gray);color:var(--charcoal);margin:2px}
+</style>
+</head>
+<body>
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-icon"><span class="material-icons">devices</span></div>
+      <span class="logo-text">IPA Asset Lease Tracker</span>
+      <span class="logo-sub">Innovations for Poverty Action</span>
+    </div>
+    <div class="auth-error" id="auth-err"></div>
+    <div class="fg"><label>Username</label><input type="text" id="li-u" placeholder="Username" autocomplete="username"></div>
+    <div class="fg"><label>Password</label><input type="password" id="li-p" placeholder="Password" autocomplete="current-password"></div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()"><span class="material-icons" style="font-size:17px">login</span> Sign In</button>
+    <div style="margin-top:12px;font-size:11px;color:var(--dark-gray);text-align:center">Contact your administrator to reset your password.</div>
+  </div>
+</div>
+<div id="toast"></div>
+<div id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-header">
+      <div class="sb-title">IPA Asset Lease Tracker</div>
+      <div class="sb-sub">Uganda Country Office</div>
+    </div>
+    <div class="sb-user">
+      <div class="u-avatar" id="uav">A</div>
+      <div><div class="u-name" id="uname">Admin</div><div class="u-role" id="urole">Admin</div></div>
+    </div>
+    <nav class="nav-sec">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" onclick="go('dashboard')" id="nv-dashboard"><span class="material-icons">dashboard</span> Dashboard</div>
+    </nav>
+    <nav class="nav-sec">
+      <div class="nav-label">Inventory</div>
+      <div class="nav-item" onclick="go('pdas')" id="nv-pdas"><span class="material-icons">tablet_android</span> PDAs / Tablets</div>
+      <div class="nav-item" onclick="go('laptops')" id="nv-laptops"><span class="material-icons">laptop</span> Laptops</div>
+    </nav>
+    <nav class="nav-sec">
+      <div class="nav-label">Leasing</div>
+      <div class="nav-item" onclick="go('leases')" id="nv-leases"><span class="material-icons">assignment</span> Leases</div>
+      <div class="nav-item" onclick="go('booking')" id="nv-booking"><span class="material-icons">event_available</span> New Booking</div>
+    </nav>
+    <nav class="nav-sec" id="sec-finance">
+      <div class="nav-label">Finance</div>
+      <div class="nav-item" onclick="go('finance')" id="nv-finance"><span class="material-icons">account_balance_wallet</span> Billing</div>
+      <div class="nav-item" onclick="go('reports')" id="nv-reports"><span class="material-icons">bar_chart</span> Reports</div>
+    </nav>
+    <nav class="nav-sec" id="sec-admin">
+      <div class="nav-label">Administration</div>
+      <div class="nav-item" onclick="go('projects')" id="nv-projects"><span class="material-icons">folder_special</span> Projects</div>
+      <div class="nav-item" onclick="go('users')" id="nv-users"><span class="material-icons">people</span> Users</div>
+      <div class="nav-item" onclick="go('alerts')" id="nv-alerts"><span class="material-icons">notifications</span> Alerts</div>
+    </nav>
+    <div class="sb-footer">
+      <button class="btn btn-secondary btn-full btn-sm" onclick="doLogout()"><span class="material-icons" style="font-size:15px">logout</span> Sign Out</button>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pg-title">Dashboard</div>
+      <div class="topbar-acts" id="pg-acts"></div>
+    </div>
+    <div class="content" id="pg-content"></div>
+  </div>
+</div>
+<div class="modal-ov" id="modal-ov" onclick="closeMod(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hdr"><div class="modal-title" id="mod-title"></div><button class="modal-close" onclick="closeMod()"><span class="material-icons">close</span></button></div>
+    <div class="modal-body" id="mod-body"></div>
+    <div class="modal-ftr" id="mod-ftr"></div>
+  </div>
+</div>
+<script>
+// ── DATA ──────────────────────────────────────────────────
+const SK='ipa_lt_v4';
+let DB=loadDB();
+function loadDB(){try{const r=localStorage.getItem(SK);if(r)return JSON.parse(r);}catch(e){}return seed();}
+function saveDB(){localStorage.setItem(SK,JSON.stringify(DB));}
+function seed(){
+  return{
+    users:[
+      {id:'u1',username:'admin',password:'admin123',name:'System Administrator',role:'Admin',email:'admin@poverty-action.org',active:true},
+      {id:'u2',username:'finance',password:'finance123',name:'Finance Officer',role:'Finance',email:'finance@poverty-action.org',active:true},
+      {id:'u3',username:'pm1',password:'pm123',name:'Project Manager One',role:'Project Manager',email:'pm@poverty-action.org',active:true},
+      {id:'u4',username:'fm1',password:'fm123',name:'Field Manager One',role:'Field Manager',email:'fm@poverty-action.org',active:true},
+      {id:'u5',username:'ra1',password:'ra123',name:'Research Associate',role:'Research Associate',email:'ra@poverty-action.org',active:true},
+    ],
+    projects:[
+      {id:'p1',code:'UGA-001',name:'Kampala Financial Inclusion Study',grantCode:'BMGF-2024-001',budgetHolder:'Sarah Nakato',fieldManager:'John Otieno',status:'Active',startDate:'2024-01-01',endDate:'2025-12-31'},
+      {id:'p2',code:'UGA-002',name:'Rural Health Intervention RCT',grantCode:'USAID-2024-002',budgetHolder:'Peter Mugisha',fieldManager:'Grace Auma',status:'Active',startDate:'2024-03-01',endDate:'2026-02-28'},
+    ],
+    pdas:[
+      {id:'d1',assetCode:'PDA-001',model:'Samsung Galaxy Tab A8',serial:'SN-TAB-001',purchaseDate:'2021-06-15',purchasePrice:850000,status:'Available',condition:'Good',notes:''},
+      {id:'d2',assetCode:'PDA-002',model:'Samsung Galaxy Tab A8',serial:'SN-TAB-002',purchaseDate:'2021-06-15',purchasePrice:850000,status:'Available',condition:'Good',notes:''},
+      {id:'d3',assetCode:'PDA-003',model:'Lenovo Tab M10',serial:'SN-TAB-003',purchaseDate:'2020-03-10',purchasePrice:700000,status:'Maintenance',condition:'Fair',notes:'Screen crack'},
+      {id:'d4',assetCode:'PDA-004',model:'Samsung Galaxy Tab A7',serial:'SN-TAB-004',purchaseDate:'2022-09-01',purchasePrice:950000,status:'Available',condition:'Excellent',notes:''},
+    ],
+    laptops:[
+      {id:'l1',assetCode:'LAP-001',model:'Dell Latitude 5520',serial:'SN-LAP-001',purchaseDate:'2021-01-15',purchasePrice:3200000,status:'Available',condition:'Good',notes:''},
+      {id:'l2',assetCode:'LAP-002',model:'HP EliteBook 840',serial:'SN-LAP-002',purchaseDate:'2020-06-20',purchasePrice:3500000,status:'Available',condition:'Good',notes:''},
+      {id:'l3',assetCode:'LAP-003',model:'Lenovo ThinkPad T14',serial:'SN-LAP-003',purchaseDate:'2022-11-05',purchasePrice:3800000,status:'Available',condition:'Excellent',notes:''},
+    ],
+    leases:[],alerts:[],
+  };
+}
+
+// ── AUTH ──────────────────────────────────────────────────
+let CU=null;
+function doLogin(){
+  const u=document.getElementById('li-u').value.trim(),p=document.getElementById('li-p').value;
+  const user=DB.users.find(x=>x.username===u&&x.password===p&&x.active);
+  const err=document.getElementById('auth-err');
+  if(!user){err.style.display='block';err.textContent='Invalid username or password.';return;}
+  CU=user;
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('uname').textContent=user.name;
+  document.getElementById('urole').textContent=user.role;
+  document.getElementById('uav').textContent=user.name.charAt(0).toUpperCase();
+  setupNav();go('dashboard');
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('auth-screen').style.display!=='none')doLogin();});
+function doLogout(){CU=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('li-u').value='';document.getElementById('li-p').value='';document.getElementById('auth-err').style.display='none';}
+function can(a){const r=CU?.role;switch(a){
+  case 'manage_users':return r==='Admin';
+  case 'manage_inventory':return r==='Admin';
+  case 'manage_projects':return r==='Admin';
+  case 'view_finance':return['Admin','Finance','Project Manager'].includes(r);
+  case 'book':return['Admin','Finance','Project Manager','Field Manager','Research Associate'].includes(r);
+  default:return false;
+}}
+function setupNav(){
+  document.getElementById('sec-admin').style.display=can('manage_users')?'':'none';
+  document.getElementById('sec-finance').style.display=can('view_finance')?'':'none';
+  document.getElementById('nv-projects').style.display=['Admin','Finance','Project Manager'].includes(CU?.role)?'':'none';
+}
+
+// ── ROUTING ───────────────────────────────────────────────
+const PAGE_TITLES={dashboard:'Dashboard',pdas:'PDA / Tablet Inventory',laptops:'Laptop Inventory',leases:'Lease Records',booking:'New Booking',finance:'Billing & Finance',reports:'Reports',projects:'Project Management',users:'User Management',alerts:'Alerts'};
+function go(page){
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  const n=document.getElementById('nv-'+page);if(n)n.classList.add('active');
+  document.getElementById('pg-title').textContent=PAGE_TITLES[page]||page;
+  const area=document.getElementById('pg-content'),acts=document.getElementById('pg-acts');
+  acts.innerHTML='';
+  ({dashboard:rDash,pdas:rPDAs,laptops:rLaptops,leases:rLeases,booking:rBooking,finance:rFinance,reports:rReports,projects:rProjects,users:rUsers,alerts:rAlerts}[page]||function(){})(area,acts);
+}
+
+// ── DEPRECIATION (Uganda 4yr SLM) ─────────────────────────
+function dep(purchaseDate,purchasePrice){
+  const yrs=(new Date()-new Date(purchaseDate))/(365.25*864e5);
+  const annual=purchasePrice/4;
+  const accum=Math.min(annual*yrs,purchasePrice);
+  const bv=Math.max(0,purchasePrice-accum);
+  const pct=Math.min(100,(accum/purchasePrice)*100);
+  return{bv:Math.round(bv),pct:Math.round(pct),isZero:bv===0,annual:Math.round(annual),yrs:yrs.toFixed(1)};
+}
+const PDA_R=5000,LAP_R=20000;
+function calcCost(l){
+  const d=Math.max(1,Math.round((new Date(l.endDate)-new Date(l.startDate))/864e5)+1);
+  const pc=(l.pdas?.length||0)*PDA_R*d,lc=(l.laptops?.length||0)*LAP_R*d;
+  return{days:d,pdaCost:pc,lapCost:lc,total:pc+lc};
+}
+function fmt(n){return'UGX '+Number(n).toLocaleString();}
+function fd(d){return d?new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';}
+function sbadge(s){const m={Active:'bg-green',Completed:'bg-blue',Cancelled:'bg-gray',Overdue:'bg-red',Draft:'bg-warn',Available:'bg-green',Leased:'bg-orange',Maintenance:'bg-warn'};return`<span class="badge ${m[s]||'bg-gray'}">${s}</span>`;}
+
+// ── TOAST ─────────────────────────────────────────────────
+function toast(msg,type='success'){const e=document.createElement('div');e.className='t-item '+type;const ic={success:'check_circle',error:'error',warning:'warning'};e.innerHTML=`<span class="material-icons" style="font-size:17px">${ic[type]||'info'}</span>${msg}`;document.getElementById('toast').appendChild(e);setTimeout(()=>e.remove(),3200);}
+
+// ── MODAL ─────────────────────────────────────────────────
+function openMod(title,body,ftr){document.getElementById('mod-title').textContent=title;document.getElementById('mod-body').innerHTML=body;document.getElementById('mod-ftr').innerHTML=ftr||'<button class="btn btn-secondary" onclick="closeMod()">Close</button>';document.getElementById('modal-ov').classList.add('active');}
+function closeMod(e){if(e&&e.target!==document.getElementById('modal-ov'))return;document.getElementById('modal-ov').classList.remove('active');}
+
+// ── DASHBOARD ─────────────────────────────────────────────
+function rDash(area,acts){
+  const pA=DB.pdas.filter(d=>d.status==='Available').length,pL=DB.pdas.filter(d=>d.status==='Leased').length;
+  const lA=DB.laptops.filter(d=>d.status==='Available').length,lL=DB.laptops.filter(d=>d.status==='Leased').length;
+  const today=new Date().toISOString().split('T')[0];
+  const exp=DB.leases.filter(l=>l.status==='Active'&&((new Date(l.endDate)-new Date(today))/864e5)<=7&&((new Date(l.endDate)-new Date(today))/864e5)>=0);
+  const zP=DB.pdas.filter(d=>dep(d.purchaseDate,d.purchasePrice).isZero).length;
+  const zL=DB.laptops.filter(d=>dep(d.purchaseDate,d.purchasePrice).isZero).length;
+  const now=new Date();
+  const mTotal=DB.leases.filter(l=>{const s=new Date(l.startDate);return s.getFullYear()===now.getFullYear()&&s.getMonth()===now.getMonth();}).reduce((s,l)=>s+calcCost(l).total,0);
+  const rec=[...DB.leases].sort((a,b)=>b.id.localeCompare(a.id)).slice(0,5);
+  area.innerHTML=`
+    ${exp.length?`<div class="alert-box ab-warn"><span class="material-icons" style="font-size:18px">warning</span><div><strong>${exp.length} lease(s) expiring within 7 days:</strong> ${exp.map(l=>l.leaseName).join(', ')}</div></div>`:''}
+    ${zP+zL>0?`<div class="alert-box ab-warn"><span class="material-icons" style="font-size:18px">report_problem</span><div><strong>Fully Depreciated:</strong> ${zP} PDA(s) and ${zL} laptop(s) have reached zero book value under Uganda's 4-year depreciation policy.</div></div>`:''}
+    <div class="stat-grid">
+      <div class="stat-card"><div class="st-label">PDAs Available</div><div class="st-val">${pA}</div><div class="st-sub">of ${DB.pdas.length} total</div></div>
+      <div class="stat-card or"><div class="st-label">PDAs Leased</div><div class="st-val">${pL}</div></div>
+      <div class="stat-card bl"><div class="st-label">Laptops Available</div><div class="st-val">${lA}</div><div class="st-sub">of ${DB.laptops.length} total</div></div>
+      <div class="stat-card tl"><div class="st-label">Laptops Leased</div><div class="st-val">${lL}</div></div>
+      <div class="stat-card"><div class="st-label">Active Leases</div><div class="st-val">${DB.leases.filter(l=>l.status==='Active').length}</div></div>
+      <div class="stat-card wn"><div class="st-label">Month Billing</div><div class="st-val" style="font-size:16px">${fmt(mTotal)}</div></div>
+    </div>
+    <div class="card"><div class="card-hdr"><div class="card-title">Recent Leases</div><button class="btn btn-secondary btn-sm" onclick="go('leases')"><span class="material-icons" style="font-size:13px">arrow_forward</span> All</button></div>
+    <div class="card-body"><div class="tw"><table><thead><tr><th>Lease</th><th>Project</th><th>PDAs</th><th>Laptops</th><th>Period</th><th>Cost</th><th>Status</th></tr></thead><tbody>
+    ${rec.length?rec.map(l=>{const c=calcCost(l);return`<tr><td><strong>${l.leaseName}</strong></td><td>${l.projectCode||'—'}</td><td>${l.pdas?.length||0}</td><td>${l.laptops?.length||0}</td><td>${fd(l.startDate)} – ${fd(l.endDate)}</td><td>${fmt(c.total)}</td><td>${sbadge(l.status)}</td></tr>`;}).join(''):'<tr><td colspan="7"><div class="es"><span class="material-icons">assignment</span>No leases yet.</div></td></tr>'}
+    </tbody></table></div></div></div>`;
+}
+
+// ── INVENTORY ─────────────────────────────────────────────
+function rPDAs(area,acts){
+  if(can('manage_inventory'))acts.innerHTML=`<button class="btn btn-secondary btn-sm" onclick="importCSV('pda')"><span class="material-icons" style="font-size:15px">upload</span> Import CSV</button><button class="btn btn-secondary btn-sm" onclick="expInv('pda')"><span class="material-icons" style="font-size:15px">download</span> Export CSV</button><button class="btn btn-primary btn-sm" onclick="openInvMod('pda',null)"><span class="material-icons" style="font-size:15px">add</span> Add PDA</button>`;
+  renderInv(area,'pda');
+}
+function rLaptops(area,acts){
+  if(can('manage_inventory'))acts.innerHTML=`<button class="btn btn-secondary btn-sm" onclick="importCSV('laptop')"><span class="material-icons" style="font-size:15px">upload</span> Import CSV</button><button class="btn btn-secondary btn-sm" onclick="expInv('laptop')"><span class="material-icons" style="font-size:15px">download</span> Export CSV</button><button class="btn btn-primary btn-sm" onclick="openInvMod('laptop',null)"><span class="material-icons" style="font-size:15px">add</span> Add Laptop</button>`;
+  renderInv(area,'laptop');
+}
+function renderInv(area,type){
+  const items=type==='pda'?DB.pdas:DB.laptops;
+  const label=type==='pda'?'PDA':'Laptop';
+  const avail=items.filter(i=>i.status==='Available').length;
+  const leased=items.filter(i=>i.status==='Leased').length;
+  const maint=items.filter(i=>i.status==='Maintenance').length;
+  const zero=items.filter(i=>dep(i.purchaseDate,i.purchasePrice).isZero).length;
+  area.innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-card"><div class="st-label">Total</div><div class="st-val">${items.length}</div></div>
+      <div class="stat-card"><div class="st-label">Available</div><div class="st-val">${avail}</div></div>
+      <div class="stat-card or"><div class="st-label">Leased</div><div class="st-val">${leased}</div></div>
+      <div class="stat-card wn"><div class="st-label">Maintenance</div><div class="st-val">${maint}</div></div>
+      <div class="stat-card or"><div class="st-label">Zero Book Value</div><div class="st-val">${zero}</div></div>
+    </div>
+    ${zero?`<div class="alert-box ab-warn"><span class="material-icons" style="font-size:18px">report_problem</span><div><strong>Depreciation Alert:</strong> ${zero} ${label}(s) have zero book value under Uganda's 4-year straight-line method. Consider write-off or disposal.</div></div>`:''}
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">${label} Inventory</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input class="si" type="text" placeholder="Search..." oninput="flt('it-${type}',this.value)">
+          <select onchange="fltCol('it-${type}',4,this.value)" style="padding:7px;border:1.5px solid var(--dark-gray);border-radius:6px;font-size:13px"><option value="">All Status</option><option>Available</option><option>Leased</option><option>Maintenance</option></select>
+          ${can('manage_inventory')?`<button class="btn btn-danger btn-sm" onclick="bulkDel('${type}')"><span class="material-icons" style="font-size:13px">delete_sweep</span> Bulk Delete</button>`:''}
+        </div>
+      </div>
+      <div class="card-body"><div class="tw"><table id="it-${type}"><thead><tr>
+        ${can('manage_inventory')?'<th><input type="checkbox" onchange="selAll(this,\'it-'+type+'\')"></th>':''}
+        <th>Asset Code</th><th>Model</th><th>Serial</th><th>Status</th><th>Condition</th><th>Purchase Date</th><th>Purchase Price</th><th>Book Value</th><th>Depreciation</th>
+        ${can('manage_inventory')?'<th>Actions</th>':''}
+      </tr></thead><tbody>
+      ${items.map(item=>{
+        const d=dep(item.purchaseDate,item.purchasePrice);
+        const bc=d.isZero?'var(--danger)':d.pct>75?'var(--warning)':'var(--ipa-green)';
+        return`<tr>
+          ${can('manage_inventory')?`<td><input type="checkbox" class="rcb" value="${item.id}"></td>`:''}
+          <td><strong>${item.assetCode}</strong></td><td>${item.model}</td><td>${item.serial||'—'}</td>
+          <td>${sbadge(item.status)}</td><td>${item.condition}</td><td>${fd(item.purchaseDate)}</td>
+          <td>${fmt(item.purchasePrice)}</td>
+          <td>${d.isZero?'<span class="badge bg-red">ZERO</span>':fmt(d.bv)}</td>
+          <td style="min-width:90px"><div class="dep-bar-w"><div class="dep-bar" style="width:${d.pct}%;background:${bc}"></div></div><div style="font-size:10px;color:var(--dark-gray);margin-top:2px">${d.pct}% (${d.yrs}y)</div></td>
+          ${can('manage_inventory')?`<td><button class="btn btn-secondary btn-sm" onclick="openInvMod('${type}','${item.id}')"><span class="material-icons" style="font-size:13px">edit</span></button> <button class="btn btn-danger btn-sm" onclick="delInv('${type}','${item.id}')"><span class="material-icons" style="font-size:13px">delete</span></button></td>`:''}
+        </tr>`;
+      }).join('')}
+      ${items.length===0?`<tr><td colspan="11"><div class="es"><span class="material-icons">devices</span>No ${label}s in inventory.</div></td></tr>`:''}
+      </tbody></table></div></div>
+    </div>`;
+}
+function selAll(cb,tid){document.querySelectorAll(`#${tid} .rcb`).forEach(c=>c.checked=cb.checked);}
+function bulkDel(type){
+  const cbs=document.querySelectorAll(`#it-${type} .rcb:checked`);
+  if(!cbs.length){toast('Select items first.','warning');return;}
+  const ids=Array.from(cbs).map(c=>c.value);
+  if(!confirm(`Delete ${ids.length} selected item(s)?`))return;
+  if(type==='pda')DB.pdas=DB.pdas.filter(x=>!ids.includes(x.id));else DB.laptops=DB.laptops.filter(x=>!ids.includes(x.id));
+  saveDB();toast(ids.length+' item(s) deleted.');type==='pda'?go('pdas'):go('laptops');
+}
+function openInvMod(type,id){
+  const list=type==='pda'?DB.pdas:DB.laptops;
+  const item=id?list.find(x=>x.id===id):{assetCode:'',model:'',serial:'',purchaseDate:'',purchasePrice:'',status:'Available',condition:'Good',notes:''};
+  const lbl=type==='pda'?'PDA / Tablet':'Laptop';
+  openMod((id?'Edit ':'Add ')+lbl,`
+    <div class="fr"><div class="fg"><label>Asset Code *</label><input id="iv-c" value="${item.assetCode}" ${id?'readonly':''}></div><div class="fg"><label>Model *</label><input id="iv-m" value="${item.model}"></div></div>
+    <div class="fr"><div class="fg"><label>Serial Number</label><input id="iv-s" value="${item.serial||''}"></div><div class="fg"><label>Status</label><select id="iv-st">${['Available','Leased','Maintenance'].map(s=>`<option ${item.status===s?'selected':''}>${s}</option>`).join('')}</select></div></div>
+    <div class="fr"><div class="fg"><label>Purchase Date</label><input type="date" id="iv-pd" value="${item.purchaseDate}"></div><div class="fg"><label>Purchase Price (UGX)</label><input type="number" id="iv-pp" value="${item.purchasePrice}"></div></div>
+    <div class="fg"><label>Condition</label><select id="iv-co">${['Excellent','Good','Fair','Poor'].map(c=>`<option ${item.condition===c?'selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="fg"><label>Notes</label><textarea id="iv-n">${item.notes||''}</textarea></div>`,
+  `<button class="btn btn-secondary" onclick="closeMod()">Cancel</button><button class="btn btn-primary" onclick="saveInv('${type}','${id||''}')">Save</button>`);
+}
+function saveInv(type,id){
+  const list=type==='pda'?DB.pdas:DB.laptops;
+  const code=document.getElementById('iv-c').value.trim(),model=document.getElementById('iv-m').value.trim();
+  if(!code||!model){toast('Code and model required.','error');return;}
+  const obj={model,serial:document.getElementById('iv-s').value.trim(),status:document.getElementById('iv-st').value,purchaseDate:document.getElementById('iv-pd').value,purchasePrice:+document.getElementById('iv-pp').value,condition:document.getElementById('iv-co').value,notes:document.getElementById('iv-n').value};
+  if(id){Object.assign(list.find(x=>x.id===id),obj);}
+  else{if(list.find(x=>x.assetCode===code)){toast('Asset code exists.','error');return;}list.push({id:'i'+Date.now(),assetCode:code,...obj});}
+  saveDB();closeMod();toast('Saved!');type==='pda'?go('pdas'):go('laptops');
+}
+function delInv(type,id){if(!confirm('Delete this asset?'))return;if(type==='pda')DB.pdas=DB.pdas.filter(x=>x.id!==id);else DB.laptops=DB.laptops.filter(x=>x.id!==id);saveDB();toast('Deleted.','success');type==='pda'?go('pdas'):go('laptops');}
+function expInv(type){
+  const items=type==='pda'?DB.pdas:DB.laptops;
+  const hdrs=['Asset Code','Model','Serial','Status','Condition','Purchase Date','Purchase Price (UGX)','Book Value (UGX)','Depreciation %','Fully Depreciated'];
+  const rows=items.map(i=>{const d=dep(i.purchaseDate,i.purchasePrice);return[i.assetCode,i.model,i.serial,i.status,i.condition,i.purchaseDate,i.purchasePrice,d.bv,d.pct+'%',d.isZero?'Yes':'No'];});
+  dlCSV([(type==='pda'?'PDA':'Laptop')+' Inventory'],hdrs,rows);
+}
+function importCSV(type){
+  const lbl=type==='pda'?'PDA':'Laptop';
+  openMod(`Import ${lbl} List from CSV`,`
+    <div class="alert-box ab-info"><span class="material-icons" style="font-size:17px">info</span><div>Required columns: <strong>AssetCode, Model, Serial, PurchaseDate (YYYY-MM-DD), PurchasePrice, Status, Condition</strong><br>Status: Available | Leased | Maintenance</div></div>
+    <div class="fg"><label>Upload CSV File</label><input type="file" id="csv-f" accept=".csv" onchange="readCSVFile(this,'${type}')"></div>
+    <div class="fg"><label>Or paste CSV text</label><textarea id="csv-t" rows="6" placeholder="AssetCode,Model,Serial,PurchaseDate,PurchasePrice,Status,Condition"></textarea></div>
+    <div id="csv-prev"></div>`,
+  `<button class="btn btn-secondary" onclick="closeMod()">Cancel</button><button class="btn btn-primary" onclick="doImport('${type}')"><span class="material-icons" style="font-size:15px">upload</span> Import</button>`);
+}
+function readCSVFile(inp,type){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{document.getElementById('csv-t').value=e.target.result;document.getElementById('csv-prev').innerHTML=`<div class="alert-box ab-ok"><span class="material-icons" style="font-size:17px">check_circle</span>File loaded. Click Import to proceed.</div>`;};r.readAsText(f);}
+function doImport(type){
+  const raw=document.getElementById('csv-t').value.trim();if(!raw){toast('No data.','error');return;}
+  const lines=raw.split('\n').filter(l=>l.trim());if(lines.length<2){toast('No data rows.','error');return;}
+  const list=type==='pda'?DB.pdas:DB.laptops;let added=0,skipped=0;
+  lines.slice(1).forEach(line=>{
+    const p=line.split(',').map(v=>v.trim().replace(/^"|"$/g,''));
+    if(p.length<7){skipped++;return;}
+    const[ac,model,serial,pd,pp,status,cond]=p;
+    if(!ac||!model){skipped++;return;}
+    if(list.find(x=>x.assetCode===ac)){skipped++;return;}
+    list.push({id:'i'+Date.now()+Math.random(),assetCode:ac,model,serial,purchaseDate:pd,purchasePrice:parseFloat(pp)||0,status:['Available','Leased','Maintenance'].includes(status)?status:'Available',condition:cond||'Good',notes:''});added++;
+  });
+  saveDB();closeMod();toast(`Import done: ${added} added, ${skipped} skipped.`,added>0?'success':'warning');type==='pda'?go('pdas'):go('laptops');
+}
+
+// ── LEASES ────────────────────────────────────────────────
+function rLeases(area,acts){
+  acts.innerHTML=`<button class="btn btn-secondary btn-sm" onclick="expLeases()"><span class="material-icons" style="font-size:15px">download</span> CSV</button><button class="btn btn-secondary btn-sm" onclick="window.print()"><span class="material-icons" style="font-size:15px">print</span> Print</button><button class="btn btn-primary btn-sm" onclick="go('booking')"><span class="material-icons" style="font-size:15px">add</span> New Booking</button>`;
+  const today=new Date().toISOString().split('T')[0];
+  DB.leases.forEach(l=>{if(l.status==='Active'&&l.endDate<today)l.status='Overdue';});saveDB();
+  area.innerHTML=`<div class="card"><div class="card-hdr"><div class="card-title">All Leases</div>
+    <div style="display:flex;gap:8px"><input class="si" type="text" placeholder="Search..." oninput="flt('lt',this.value)"><select onchange="fltCol('lt',7,this.value)" style="padding:7px;border:1.5px solid var(--dark-gray);border-radius:6px;font-size:13px"><option value="">All</option><option>Active</option><option>Completed</option><option>Overdue</option><option>Cancelled</option></select></div></div>
+    <div class="card-body"><div class="tw"><table id="lt"><thead><tr><th>#</th><th>Lease Name</th><th>Project</th><th>Booked By</th><th>PDAs</th><th>Laptops</th><th>Period</th><th>Status</th><th>Total Cost</th><th>Actions</th></tr></thead><tbody>
+    ${DB.leases.length?[...DB.leases].sort((a,b)=>b.id.localeCompare(a.id)).map((l,i)=>{const c=calcCost(l);return`<tr>
+      <td>${i+1}</td><td><strong>${l.leaseName}</strong></td><td>${l.projectCode||'—'}</td><td>${l.bookedBy||l.lesseeEmail||'—'}</td>
+      <td>${l.pdas?.length||0}</td><td>${l.laptops?.length||0}</td>
+      <td>${fd(l.startDate)} – ${fd(l.endDate)}<br><span style="font-size:11px;color:var(--dark-gray)">${c.days} days</span></td>
+      <td>${sbadge(l.status)}</td><td><strong>${fmt(c.total)}</strong></td>
+      <td><button class="btn btn-secondary btn-sm" onclick="viewLease('${l.id}')"><span class="material-icons" style="font-size:13px">visibility</span></button>${l.status==='Active'?` <button class="btn btn-warning btn-sm" onclick="closeLease('${l.id}','Completed')"><span class="material-icons" style="font-size:13px">done_all</span></button> <button class="btn btn-danger btn-sm" onclick="closeLease('${l.id}','Cancelled')"><span class="material-icons" style="font-size:13px">cancel</span></button>`:''}</td>
+    </tr>`;}).join(''):'<tr><td colspan="10"><div class="es"><span class="material-icons">assignment</span>No leases found.</div></td></tr>'}
+    </tbody></table></div></div></div>`;
+}
+function viewLease(id){
+  const l=DB.leases.find(x=>x.id===id);if(!l)return;
+  const c=calcCost(l);
+  const pdaList=(l.pdas||[]).map(pid=>DB.pdas.find(x=>x.id===pid)).filter(Boolean);
+  const lapList=(l.laptops||[]).map(lid=>DB.laptops.find(x=>x.id===lid)).filter(Boolean);
+  openMod('Lease: '+l.leaseName,`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;font-size:13px">
+      <div><strong>Status:</strong> ${sbadge(l.status)}</div>
+      <div><strong>Booked By:</strong> ${l.bookedBy||'—'} (${l.bookedByRole||''})</div>
+      <div><strong>Project:</strong> ${l.projectCode||'—'}</div>
+      <div><strong>Grant Code:</strong> ${l.grantCode||'—'}</div>
+      <div><strong>Budget Holder:</strong> ${l.budgetHolder||'—'}</div>
+      <div><strong>Field Manager:</strong> ${l.fieldManager||'—'}</div>
+      <div><strong>Lessee:</strong> ${l.lesseeEmail||'—'}</div>
+      <div><strong>Duration:</strong> ${c.days} days</div>
+      <div><strong>Start:</strong> ${fd(l.startDate)}</div>
+      <div><strong>End:</strong> ${fd(l.endDate)}</div>
+    </div>
+    <div class="cost-box"><div style="font-size:11px;opacity:.8;margin-bottom:4px">TOTAL LEASE COST</div><div class="cost-amt">${fmt(c.total)}</div><div style="font-size:12px;opacity:.75;margin-top:4px">${fmt(c.pdaCost)} PDAs + ${fmt(c.lapCost)} Laptops</div></div>
+    ${pdaList.length?`<div style="margin-bottom:10px"><strong>PDAs (${pdaList.length}):</strong><br>${pdaList.map(d=>`<span class="chip"><span class="material-icons" style="font-size:12px">tablet_android</span>${d.assetCode} – ${d.model}</span>`).join('')}</div>`:''}
+    ${lapList.length?`<div><strong>Laptops (${lapList.length}):</strong><br>${lapList.map(d=>`<span class="chip"><span class="material-icons" style="font-size:12px">laptop</span>${d.assetCode} – ${d.model}</span>`).join('')}</div>`:''}
+    ${l.notes?`<div style="margin-top:10px;font-size:13px"><strong>Notes:</strong> ${l.notes}</div>`:''}`,
+  `<button class="btn btn-secondary" onclick="closeMod()">Close</button><button class="btn btn-secondary btn-sm" onclick="expSingleLease('${l.id}')"><span class="material-icons" style="font-size:13px">download</span> CSV</button>`);
+}
+function closeLease(id,status){
+  const l=DB.leases.find(x=>x.id===id);if(!l||!confirm(`${status==='Completed'?'Complete':'Cancel'} this lease?`))return;
+  l.status=status;(l.pdas||[]).forEach(pid=>{const d=DB.pdas.find(x=>x.id===pid);if(d)d.status='Available';});(l.laptops||[]).forEach(lid=>{const d=DB.laptops.find(x=>x.id===lid);if(d)d.status='Available';});
+  saveDB();toast(status==='Completed'?'Lease completed. Assets released.':'Lease cancelled.',status==='Completed'?'success':'warning');go('leases');
+}
+function expLeases(){dlCSV(['Lease Records'],['Lease Name','Project','Grant','Budget Holder','Field Mgr','Booked By','PDAs','Laptops','Start','End','Days','PDA Cost','Laptop Cost','Total','Status'],DB.leases.map(l=>{const c=calcCost(l);return[l.leaseName,l.projectCode,l.grantCode,l.budgetHolder,l.fieldManager,l.bookedBy,l.pdas?.length||0,l.laptops?.length||0,l.startDate,l.endDate,c.days,c.pdaCost,c.lapCost,c.total,l.status];}));}
+function expSingleLease(id){const l=DB.leases.find(x=>x.id===id);if(!l)return;const c=calcCost(l);dlCSV(['Lease: '+l.leaseName],['Field','Value'],[['Lease Name',l.leaseName],['Project',l.projectCode],['Grant',l.grantCode],['Start',l.startDate],['End',l.endDate],['Days',c.days],['PDAs',l.pdas?.length||0],['Laptops',l.laptops?.length||0],['Total Cost (UGX)',c.total],['Status',l.status]]);}
+
+// ── BOOKING ───────────────────────────────────────────────
+function rBooking(area,acts){
+  const avP=DB.pdas.filter(d=>d.status==='Available');
+  const avL=DB.laptops.filter(d=>d.status==='Available');
+  area.innerHTML=`<div class="card"><div class="card-hdr"><div class="card-title">Create New Lease / Booking</div></div><div class="card-body">
+    <div class="fr"><div class="fg"><label>Lease Name *</label><input id="bk-n" placeholder="e.g. Kampala Survey Wave 2"></div><div class="fg"><label>Project</label>
+      <select id="bk-proj" onchange="bkFill()"><option value="">— Select Project —</option>${DB.projects.map(p=>`<option value="${p.id}">${p.code} – ${p.name}</option>`).join('')}</select></div></div>
+    <div class="fr fr3"><div class="fg"><label>Project Code</label><input id="bk-pc" placeholder="Auto-filled"></div><div class="fg"><label>Grant Code</label><input id="bk-gc" placeholder="Auto-filled"></div><div class="fg"><label>Budget Holder</label><input id="bk-bh" placeholder="Auto-filled"></div></div>
+    <div class="fr"><div class="fg"><label>Field Manager</label><input id="bk-fm" placeholder="Auto-filled or enter name"></div><div class="fg"><label>Lessee Email *</label><input id="bk-em" value="${CU?.email||''}"></div></div>
+    <div class="fr"><div class="fg"><label>Start Date *</label><input type="date" id="bk-sd" onchange="bkCost()"></div><div class="fg"><label>End Date *</label><input type="date" id="bk-ed" onchange="bkCost()"></div></div>
+    <div class="fr">
+      <div class="fg"><label>Select PDAs <span class="badge bg-green">${avP.length} available</span></label>
+        ${avP.length?`<div style="max-height:150px;overflow-y:auto;border:1.5px solid var(--dark-gray);border-radius:6px;padding:8px">${avP.map(d=>`<label style="display:flex;align-items:center;gap:7px;padding:4px 0;cursor:pointer"><input type="checkbox" class="pc" value="${d.id}" onchange="bkCost()"><span><strong>${d.assetCode}</strong> – ${d.model} <span class="badge bg-green" style="font-size:9px">${d.condition}</span></span></label>`).join('')}</div>`:'<div class="alert-box ab-warn" style="font-size:12px"><span class="material-icons" style="font-size:16px">warning</span>No PDAs available.</div>'}
+      </div>
+      <div class="fg"><label>Select Laptops <span class="badge bg-blue">${avL.length} available</span></label>
+        ${avL.length?`<div style="max-height:150px;overflow-y:auto;border:1.5px solid var(--dark-gray);border-radius:6px;padding:8px">${avL.map(d=>`<label style="display:flex;align-items:center;gap:7px;padding:4px 0;cursor:pointer"><input type="checkbox" class="lc" value="${d.id}" onchange="bkCost()"><span><strong>${d.assetCode}</strong> – ${d.model} <span class="badge bg-green" style="font-size:9px">${d.condition}</span></span></label>`).join('')}</div>`:'<div class="alert-box ab-warn" style="font-size:12px"><span class="material-icons" style="font-size:16px">warning</span>No laptops available.</div>'}
+      </div>
+    </div>
+    <div id="bk-cost"></div>
+    <div class="fg"><label>Notes</label><textarea id="bk-notes" placeholder="Additional notes..."></textarea></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
+      <button class="btn btn-secondary" onclick="go('leases')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitBk()"><span class="material-icons" style="font-size:15px">save</span> Create Lease</button>
+    </div>
+  </div></div>`;
+}
+function bkFill(){const p=DB.projects.find(x=>x.id===document.getElementById('bk-proj').value);if(!p)return;['pc','gc','bh','fm'].forEach((k,i)=>document.getElementById('bk-'+k).value=[p.code,p.grantCode,p.budgetHolder,p.fieldManager][i]);}
+function bkCost(){
+  const sd=document.getElementById('bk-sd').value,ed=document.getElementById('bk-ed').value;
+  const p=document.querySelectorAll('.pc:checked').length,l=document.querySelectorAll('.lc:checked').length;
+  const box=document.getElementById('bk-cost');
+  if(!sd||!ed||(!p&&!l)){box.innerHTML='';return;}
+  const days=Math.max(1,Math.round((new Date(ed)-new Date(sd))/864e5)+1);
+  const pc=p*PDA_R*days,lc=l*LAP_R*days,tot=pc+lc;
+  box.innerHTML=`<div class="cost-box"><div style="font-size:11px;opacity:.8;margin-bottom:4px">ESTIMATED LEASE COST</div><div class="cost-amt">${fmt(tot)}</div><div style="font-size:12px;opacity:.75;margin-top:5px">${days} days × ${p} PDA(s) @ UGX 5,000 = ${fmt(pc)}<br>${days} days × ${l} Laptop(s) @ UGX 20,000 = ${fmt(lc)}</div></div>`;
+}
+function submitBk(){
+  const name=document.getElementById('bk-n').value.trim();
+  const sd=document.getElementById('bk-sd').value,ed=document.getElementById('bk-ed').value;
+  if(!name){toast('Lease name required.','error');return;}
+  if(!sd||!ed){toast('Dates required.','error');return;}
+  if(ed<sd){toast('End must be after start.','error');return;}
+  const pIds=Array.from(document.querySelectorAll('.pc:checked')).map(c=>c.value);
+  const lIds=Array.from(document.querySelectorAll('.lc:checked')).map(c=>c.value);
+  if(!pIds.length&&!lIds.length){toast('Select at least one asset.','error');return;}
+  // Check already assigned
+  const aa=[...pIds.map(id=>DB.pdas.find(x=>x.id===id)),...lIds.map(id=>DB.laptops.find(x=>x.id===id))].filter(x=>x&&x.status!=='Available');
+  if(aa.length){toast('Already assigned: '+aa.map(x=>x.assetCode).join(', '),'error');return;}
+  const lease={id:'L'+Date.now(),leaseName:name,projectId:document.getElementById('bk-proj').value,projectCode:document.getElementById('bk-pc').value,grantCode:document.getElementById('bk-gc').value,budgetHolder:document.getElementById('bk-bh').value,fieldManager:document.getElementById('bk-fm').value,lesseeEmail:document.getElementById('bk-em').value,bookedBy:CU?.name,bookedByRole:CU?.role,startDate:sd,endDate:ed,pdas:pIds,laptops:lIds,notes:document.getElementById('bk-notes').value,status:'Active',createdAt:new Date().toISOString()};
+  DB.leases.push(lease);
+  pIds.forEach(id=>{const d=DB.pdas.find(x=>x.id===id);if(d)d.status='Leased';});
+  lIds.forEach(id=>{const d=DB.laptops.find(x=>x.id===id);if(d)d.status='Leased';});
+  DB.alerts.push({id:'A'+Date.now(),type:'New Lease',message:`Lease "${name}" created. Pickup ready for ${document.getElementById('bk-em').value}.`,date:new Date().toISOString().split('T')[0],read:false});
+  saveDB();toast('Lease created!','success');go('leases');
+}
+
+// ── FINANCE ───────────────────────────────────────────────
+function rFinance(area,acts){
+  acts.innerHTML=`<button class="btn btn-secondary btn-sm" onclick="expFinance()"><span class="material-icons" style="font-size:15px">download</span> CSV</button><button class="btn btn-secondary btn-sm" onclick="window.print()"><span class="material-icons" style="font-size:15px">print</span> Print</button>`;
+  const months={};
+  DB.leases.forEach(l=>{const k=l.startDate?l.startDate.slice(0,7):'Unknown';if(!months[k])months[k]={leases:[],tp:0,tl:0,tot:0};const c=calcCost(l);months[k].leases.push({...l,c});months[k].tp+=c.pdaCost;months[k].tl+=c.lapCost;months[k].tot+=c.total;});
+  const grand=DB.leases.reduce((s,l)=>s+calcCost(l).total,0);
+  const mks=Object.keys(months).sort().reverse();
+  area.innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-card"><div class="st-label">Total Billed (All Time)</div><div class="st-val" style="font-size:17px">${fmt(grand)}</div></div>
+      <div class="stat-card bl"><div class="st-label">Active Leases</div><div class="st-val">${DB.leases.filter(l=>l.status==='Active').length}</div></div>
+      <div class="stat-card or"><div class="st-label">Completed</div><div class="st-val">${DB.leases.filter(l=>l.status==='Completed').length}</div></div>
+    </div>
+    ${mks.length===0?'<div class="es"><span class="material-icons">account_balance_wallet</span>No billing data yet.</div>':mks.map(mk=>{const m=months[mk];const lbl=new Date(mk+'-01').toLocaleDateString('en-GB',{month:'long',year:'numeric'});return`<div class="card"><div class="card-hdr"><div class="card-title">${lbl}</div><div style="text-align:right"><div style="font-size:19px;font-weight:bold;color:var(--dark-green)">${fmt(m.tot)}</div><div style="font-size:11px;color:var(--dark-gray)">${fmt(m.tp)} PDAs + ${fmt(m.tl)} Laptops</div></div></div>
+    <div class="card-body"><div class="tw"><table><thead><tr><th>Lease</th><th>Project</th><th>Budget Holder</th><th>PDAs</th><th>Laptops</th><th>Days</th><th>PDA Cost</th><th>Laptop Cost</th><th>Total</th><th>Status</th></tr></thead><tbody>
+    ${m.leases.map(l=>`<tr><td><strong>${l.leaseName}</strong></td><td>${l.projectCode||'—'}</td><td>${l.budgetHolder||'—'}</td><td>${l.pdas?.length||0}</td><td>${l.laptops?.length||0}</td><td>${l.c.days}</td><td>${fmt(l.c.pdaCost)}</td><td>${fmt(l.c.lapCost)}</td><td><strong>${fmt(l.c.total)}</strong></td><td>${sbadge(l.status)}</td></tr>`).join('')}
+    </tbody></table></div></div></div>`;}).join('')}`;
+}
+function expFinance(){dlCSV(['IPA Finance Report','Generated '+new Date().toLocaleDateString()],['Month','Lease','Project','Budget Holder','PDAs','Laptops','Days','PDA Cost','Laptop Cost','Total','Status'],DB.leases.sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||'')).map(l=>{const c=calcCost(l);return[l.startDate?.slice(0,7),l.leaseName,l.projectCode,l.budgetHolder,l.pdas?.length||0,l.laptops?.length||0,c.days,c.pdaCost,c.lapCost,c.total,l.status];}));}
+
+// ── REPORTS ───────────────────────────────────────────────
+function rReports(area,acts){
+  acts.innerHTML=`<button class="btn btn-secondary btn-sm" onclick="window.print()"><span class="material-icons" style="font-size:15px">print</span> Print</button>`;
+  const pU=DB.pdas.length?(DB.pdas.filter(d=>d.status==='Leased').length/DB.pdas.length*100).toFixed(1):0;
+  const lU=DB.laptops.length?(DB.laptops.filter(d=>d.status==='Leased').length/DB.laptops.length*100).toFixed(1):0;
+  const pb={};DB.leases.forEach(l=>{const k=l.projectCode||'Unassigned';if(!pb[k])pb[k]={tot:0,n:0};pb[k].tot+=calcCost(l).total;pb[k].n++;});
+  area.innerHTML=`
+    <div class="tab-bar">
+      <div class="tab active" onclick="swTab(this,'rs')">Lease Summary</div>
+      <div class="tab" onclick="swTab(this,'ru')">Utilization</div>
+      <div class="tab" onclick="swTab(this,'rp')">Project Billing</div>
+      <div class="tab" onclick="swTab(this,'rd')">Depreciation</div>
+    </div>
+    <div id="rs" class="page active">
+      <div class="card"><div class="card-hdr"><div class="card-title">Lease Summary</div><button class="btn btn-secondary btn-sm" onclick="expLeases()"><span class="material-icons" style="font-size:13px">download</span> CSV</button></div>
+      <div class="card-body"><div class="stat-grid">
+        <div class="stat-card"><div class="st-label">Total Leases</div><div class="st-val">${DB.leases.length}</div></div>
+        <div class="stat-card"><div class="st-label">Active</div><div class="st-val">${DB.leases.filter(l=>l.status==='Active').length}</div></div>
+        <div class="stat-card bl"><div class="st-label">Completed</div><div class="st-val">${DB.leases.filter(l=>l.status==='Completed').length}</div></div>
+        <div class="stat-card or"><div class="st-label">Overdue</div><div class="st-val">${DB.leases.filter(l=>l.status==='Overdue').length}</div></div>
+        <div class="stat-card"><div class="st-label">Total Revenue</div><div class="st-val" style="font-size:15px">${fmt(DB.leases.reduce((s,l)=>s+calcCost(l).total,0))}</div></div>
+      </div></div></div>
+    </div>
+    <div id="ru" class="page">
+      <div class="card"><div class="card-hdr"><div class="card-title">Asset Utilization</div><button class="btn btn-secondary btn-sm" onclick="expUtil()"><span class="material-icons" style="font-size:13px">download</span> CSV</button></div>
+      <div class="card-body">
+        <div class="fr">
+          <div><h3 style="margin-bottom:10px;color:var(--dark-green)">PDAs: ${pU}% utilization</h3><div class="dep-bar-w" style="height:14px;margin-bottom:14px"><div class="dep-bar" style="width:${pU}%;background:var(--ipa-green)"></div></div>
+            <div class="tw"><table><thead><tr><th>Code</th><th>Model</th><th>Status</th><th>Times Leased</th></tr></thead><tbody>${DB.pdas.map(d=>`<tr><td>${d.assetCode}</td><td>${d.model}</td><td>${sbadge(d.status)}</td><td>${DB.leases.filter(l=>l.pdas?.includes(d.id)).length}</td></tr>`).join('')}</tbody></table></div></div>
+          <div><h3 style="margin-bottom:10px;color:var(--dark-green)">Laptops: ${lU}% utilization</h3><div class="dep-bar-w" style="height:14px;margin-bottom:14px"><div class="dep-bar" style="width:${lU}%;background:var(--dark-blue)"></div></div>
+            <div class="tw"><table><thead><tr><th>Code</th><th>Model</th><th>Status</th><th>Times Leased</th></tr></thead><tbody>${DB.laptops.map(d=>`<tr><td>${d.assetCode}</td><td>${d.model}</td><td>${sbadge(d.status)}</td><td>${DB.leases.filter(l=>l.laptops?.includes(d.id)).length}</td></tr>`).join('')}</tbody></table></div></div>
+        </div>
+      </div></div>
+    </div>
+    <div id="rp" class="page">
+      <div class="card"><div class="card-hdr"><div class="card-title">Project Billing</div><button class="btn btn-secondary btn-sm" onclick="expProjBill()"><span class="material-icons" style="font-size:13px">download</span> CSV</button></div>
+      <div class="card-body"><div class="tw"><table><thead><tr><th>Project Code</th><th>Leases</th><th>Total Billed</th></tr></thead><tbody>
+        ${Object.entries(pb).map(([k,v])=>`<tr><td><strong>${k}</strong></td><td>${v.n}</td><td><strong>${fmt(v.tot)}</strong></td></tr>`).join('')}
+        ${Object.keys(pb).length===0?'<tr><td colspan="3"><div class="es"><span class="material-icons">folder</span>No data yet.</div></td></tr>':''}
+      </tbody></table></div></div></div>
+    </div>
+    <div id="rd" class="page">
+      <div class="card"><div class="card-hdr"><div class="card-title">Depreciation Report</div><button class="btn btn-secondary btn-sm" onclick="expDep()"><span class="material-icons" style="font-size:13px">download</span> CSV</button></div>
+      <div class="card-body">
+        <div class="alert-box ab-info" style="margin-bottom:14px"><span class="material-icons" style="font-size:17px">info</span><div>Uganda Income Tax Act: Electronic equipment depreciates over <strong>4 years</strong> using the straight-line method. Items at zero book value should be written off or disposed of.</div></div>
+        <div class="tw"><table><thead><tr><th>Code</th><th>Type</th><th>Model</th><th>Purchase Date</th><th>Purchase Price</th><th>Annual Depr.</th><th>Book Value</th><th>% Dep.</th><th>Flag</th></tr></thead><tbody>
+        ${[...DB.pdas.map(d=>({...d,type:'PDA'})),...DB.laptops.map(d=>({...d,type:'Laptop'}))].map(item=>{
+          const d=dep(item.purchaseDate,item.purchasePrice);
+          return`<tr${d.isZero?' style="background:#fff8e1"':''}><td><strong>${item.assetCode}</strong></td><td>${item.type}</td><td>${item.model}</td><td>${fd(item.purchaseDate)}</td><td>${fmt(item.purchasePrice)}</td><td>${fmt(d.annual)}</td><td>${d.isZero?'<span class="badge bg-red">ZERO</span>':fmt(d.bv)}</td><td>${d.pct}%</td><td>${d.isZero?'<span class="badge bg-red">Write-off</span>':d.pct>=75?'<span class="badge bg-warn">Near Zero</span>':'<span class="badge bg-green">OK</span>'}</td></tr>`;
+        }).join('')}
+        </tbody></table></div>
+      </div></div>
+    </div>`;
+}
+function swTab(el,pid){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));el.classList.add('active');document.getElementById(pid)?.classList.add('active');}
+function expUtil(){dlCSV(['Utilization Report'],['Code','Type','Model','Status','Times Leased'],[...DB.pdas.map(d=>[d.assetCode,'PDA',d.model,d.status,DB.leases.filter(l=>l.pdas?.includes(d.id)).length]),...DB.laptops.map(d=>[d.assetCode,'Laptop',d.model,d.status,DB.leases.filter(l=>l.laptops?.includes(d.id)).length])]);}
+function expProjBill(){const pb={};DB.leases.forEach(l=>{const k=l.projectCode||'Unassigned';if(!pb[k])pb[k]={tot:0,n:0};pb[k].tot+=calcCost(l).total;pb[k].n++;});dlCSV(['Project Billing'],['Project Code','Leases','Total Billed (UGX)'],Object.entries(pb).map(([k,v])=>[k,v.n,v.tot]));}
+function expDep(){dlCSV(['Depreciation Report (Uganda 4yr SLM)'],['Code','Type','Model','Purchase Date','Purchase Price','Annual Depr.','Book Value','% Dep.','Zero?'],[...DB.pdas.map(d=>{const x=dep(d.purchaseDate,d.purchasePrice);return[d.assetCode,'PDA',d.model,d.purchaseDate,d.purchasePrice,x.annual,x.bv,x.pct+'%',x.isZero?'Yes':'No'];}),...DB.laptops.map(d=>{const x=dep(d.purchaseDate,d.purchasePrice);return[d.assetCode,'Laptop',d.model,d.purchaseDate,d.purchasePrice,x.annual,x.bv,x.pct+'%',x.isZero?'Yes':'No'];})]);}
+
+// ── PROJECTS ──────────────────────────────────────────────
+function rProjects(area,acts){
+  if(can('manage_projects'))acts.innerHTML=`<button class="btn btn-primary btn-sm" onclick="openProjMod(null)"><span class="material-icons" style="font-size:15px">add</span> Add Project</button>`;
+  area.innerHTML=`<div class="card"><div class="card-hdr"><div class="card-title">Projects</div><input class="si" type="text" placeholder="Search..." oninput="flt('pt',this.value)"></div>
+    <div class="card-body"><div class="tw"><table id="pt"><thead><tr><th>Code</th><th>Project Name</th><th>Grant</th><th>Budget Holder</th><th>Field Manager</th><th>Status</th><th>Period</th>${can('manage_projects')?'<th>Actions</th>':''}</tr></thead><tbody>
+    ${DB.projects.map(p=>`<tr><td><strong>${p.code}</strong></td><td>${p.name}</td><td>${p.grantCode}</td><td>${p.budgetHolder}</td><td>${p.fieldManager}</td><td>${sbadge(p.status)}</td><td>${fd(p.startDate)} – ${fd(p.endDate)}</td>${can('manage_projects')?`<td><button class="btn btn-secondary btn-sm" onclick="openProjMod('${p.id}')"><span class="material-icons" style="font-size:13px">edit</span></button> <button class="btn btn-danger btn-sm" onclick="delProj('${p.id}')"><span class="material-icons" style="font-size:13px">delete</span></button></td>`:''}</tr>`).join('')}
+    ${DB.projects.length===0?'<tr><td colspan="8"><div class="es"><span class="material-icons">folder_special</span>No projects.</div></td></tr>':''}
+    </tbody></table></div></div></div>`;
+}
+function openProjMod(id){
+  const p=id?DB.projects.find(x=>x.id===id):{code:'',name:'',grantCode:'',budgetHolder:'',fieldManager:'',status:'Active',startDate:'',endDate:''};
+  openMod((id?'Edit':'Add')+' Project',`
+    <div class="fr"><div class="fg"><label>Project Code *</label><input id="pj-c" value="${p.code}"></div><div class="fg"><label>Grant Code</label><input id="pj-g" value="${p.grantCode}"></div></div>
+    <div class="fg"><label>Project Name *</label><input id="pj-n" value="${p.name}"></div>
+    <div class="fr"><div class="fg"><label>Budget Holder</label><input id="pj-bh" value="${p.budgetHolder}"></div><div class="fg"><label>Field Manager</label><input id="pj-fm" value="${p.fieldManager}"></div></div>
+    <div class="fr"><div class="fg"><label>Start Date</label><input type="date" id="pj-sd" value="${p.startDate}"></div><div class="fg"><label>End Date</label><input type="date" id="pj-ed" value="${p.endDate}"></div></div>
+    <div class="fg"><label>Status</label><select id="pj-st">${['Active','Completed','Suspended'].map(s=>`<option ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></div>`,
+  `<button class="btn btn-secondary" onclick="closeMod()">Cancel</button><button class="btn btn-primary" onclick="saveProj('${id||''}')">Save</button>`);
+}
+function saveProj(id){
+  const code=document.getElementById('pj-c').value.trim(),name=document.getElementById('pj-n').value.trim();
+  if(!code||!name){toast('Code and name required.','error');return;}
+  const obj={id:id||'P'+Date.now(),code,name,grantCode:document.getElementById('pj-g').value,budgetHolder:document.getElementById('pj-bh').value,fieldManager:document.getElementById('pj-fm').value,status:document.getElementById('pj-st').value,startDate:document.getElementById('pj-sd').value,endDate:document.getElementById('pj-ed').value};
+  if(id){const i=DB.projects.findIndex(x=>x.id===id);DB.projects[i]=obj;}else DB.projects.push(obj);
+  saveDB();closeMod();toast('Saved!');go('projects');
+}
+function delProj(id){if(!confirm('Delete project?'))return;DB.projects=DB.projects.filter(x=>x.id!==id);saveDB();toast('Deleted.','success');go('projects');}
+
+// ── USERS ─────────────────────────────────────────────────
+function rUsers(area,acts){
+  acts.innerHTML=`<button class="btn btn-primary btn-sm" onclick="openUserMod(null)"><span class="material-icons" style="font-size:15px">person_add</span> Add User</button>`;
+  area.innerHTML=`<div class="card"><div class="card-hdr"><div class="card-title">Users</div><input class="si" type="text" placeholder="Search..." oninput="flt('ut',this.value)"></div>
+    <div class="card-body">
+      <div class="tw"><table id="ut"><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+      ${DB.users.map(u=>`<tr><td><strong>${u.name}</strong></td><td>${u.username}</td><td>${u.email||'—'}</td><td><span class="badge bg-blue">${u.role}</span></td><td>${u.active?'<span class="badge bg-green">Active</span>':'<span class="badge bg-red">Inactive</span>'}</td><td>
+        <button class="btn btn-secondary btn-sm" onclick="openUserMod('${u.id}')"><span class="material-icons" style="font-size:13px">edit</span></button>${u.id!==CU?.id?` <button class="btn btn-danger btn-sm" onclick="delUser('${u.id}')"><span class="material-icons" style="font-size:13px">person_remove</span></button>`:''}
+      </td></tr>`).join('')}
+      </tbody></table></div>
+      <div style="margin-top:12px;padding:12px;background:var(--light-gray);border-radius:6px;font-size:12px"><strong>Roles:</strong> Admin: Full | Finance: Finance/Reports | Project Manager: View leases + book | Field Manager & Research Associate: Book only</div>
+    </div></div>`;
+}
+function openUserMod(id){
+  const u=id?DB.users.find(x=>x.id===id):{name:'',username:'',password:'',email:'',role:'Field Manager',active:true};
+  openMod((id?'Edit':'Add')+' User',`
+    <div class="fr"><div class="fg"><label>Full Name *</label><input id="ur-n" value="${u.name}"></div><div class="fg"><label>Username *</label><input id="ur-u" value="${u.username}" ${id?'readonly':''}></div></div>
+    <div class="fr"><div class="fg"><label>Password ${id?'(blank=keep)':''} *</label><input type="password" id="ur-p" placeholder="${id?'Leave blank to keep current':'Enter password'}"></div><div class="fg"><label>Email</label><input type="email" id="ur-e" value="${u.email||''}"></div></div>
+    <div class="fr"><div class="fg"><label>Role</label><select id="ur-r">${['Admin','Finance','Project Manager','Field Manager','Research Associate'].map(r=>`<option ${u.role===r?'selected':''}>${r}</option>`).join('')}</select></div><div class="fg"><label>Status</label><select id="ur-a"><option value="1" ${u.active?'selected':''}>Active</option><option value="0" ${!u.active?'selected':''}>Inactive</option></select></div></div>`,
+  `<button class="btn btn-secondary" onclick="closeMod()">Cancel</button><button class="btn btn-primary" onclick="saveUser('${id||''}')">Save</button>`);
+}
+function saveUser(id){
+  const name=document.getElementById('ur-n').value.trim(),uname=document.getElementById('ur-u').value.trim(),pass=document.getElementById('ur-p').value;
+  if(!name||!uname){toast('Name and username required.','error');return;}
+  if(!id&&!pass){toast('Password required.','error');return;}
+  if(!id&&DB.users.find(x=>x.username===uname)){toast('Username exists.','error');return;}
+  const obj={id:id||'u'+Date.now(),name,username:uname,email:document.getElementById('ur-e').value,role:document.getElementById('ur-r').value,active:document.getElementById('ur-a').value==='1'};
+  if(pass)obj.password=pass;
+  if(id){const i=DB.users.findIndex(x=>x.id===id);Object.assign(DB.users[i],obj);}else DB.users.push(obj);
+  saveDB();closeMod();toast('Saved!');go('users');
+}
+function delUser(id){if(!confirm('Remove user?'))return;DB.users=DB.users.filter(x=>x.id!==id);saveDB();toast('Removed.','success');go('users');}
+
+// ── ALERTS ────────────────────────────────────────────────
+function rAlerts(area,acts){
+  acts.innerHTML=`<button class="btn btn-secondary btn-sm" onclick="markAllRead()"><span class="material-icons" style="font-size:15px">done_all</span> Mark All Read</button>`;
+  const today=new Date().toISOString().split('T')[0];
+  DB.leases.filter(l=>l.status==='Active').forEach(l=>{
+    const diff=(new Date(l.endDate)-new Date(today))/864e5;
+    const key='exp-'+l.id;
+    if(diff>=0&&diff<=7&&!DB.alerts.find(a=>a.id===key))DB.alerts.push({id:key,type:'Expiry Warning',message:`Lease "${l.leaseName}" expires ${fd(l.endDate)} (${Math.ceil(diff)} day(s) remaining).`,date:today,read:false});
+  });saveDB();
+  area.innerHTML=`<div class="card"><div class="card-hdr"><div class="card-title">System Alerts</div><span class="badge bg-red">${DB.alerts.filter(a=>!a.read).length} unread</span></div>
+    <div class="card-body">
+    ${DB.alerts.length===0?'<div class="es"><span class="material-icons">notifications_none</span>No alerts.</div>':[...DB.alerts].reverse().map(a=>`<div class="alert-box ${a.read?'ab-info':'ab-warn'}" style="margin-bottom:7px;cursor:pointer" onclick="markRead('${a.id}')">
+      <span class="material-icons" style="font-size:17px">${a.type==='Expiry Warning'?'timer':'check_circle'}</span>
+      <div style="flex:1"><div style="font-weight:bold;font-size:11px;text-transform:uppercase;opacity:.7">${a.type} · ${a.date}</div><div>${a.message}</div></div>
+      ${!a.read?'<span class="badge bg-orange" style="font-size:10px">NEW</span>':''}
+    </div>`).join('')}
+    </div></div>`;
+}
+function markRead(id){const a=DB.alerts.find(x=>x.id===id);if(a){a.read=true;saveDB();go('alerts');}}
+function markAllRead(){DB.alerts.forEach(a=>a.read=true);saveDB();toast('All read.');go('alerts');}
+
+// ── UTILS ─────────────────────────────────────────────────
+function flt(tid,q){const rows=document.querySelectorAll(`#${tid} tbody tr`);const v=q.toLowerCase();rows.forEach(r=>r.style.display=r.textContent.toLowerCase().includes(v)?'':'none');}
+function fltCol(tid,ci,val){const rows=document.querySelectorAll(`#${tid} tbody tr`);rows.forEach(r=>{const c=r.querySelectorAll('td')[ci];r.style.display=(!val||(c&&c.textContent.trim()===val))?'':'none';});}
+function dlCSV(hdr,cols,data){const ln=[...hdr,'',cols.map(c=>`"${c}"`).join(','),...data.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(','))];const b=new Blob([ln.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='ipa-'+new Date().toISOString().slice(0,10)+'.csv';a.click();}
+</script>
+</body>
+</html>
